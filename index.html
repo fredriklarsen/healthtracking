@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fredrik — Helsetracking v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0c10;--s1:#111318;--s2:#181c24;--border:#222635;--green:#3dffa0;--red:#ff5c5c;--yellow:#ffcc44;--blue:#5cc8ff;--purple:#b48cff;--text:#dce4f0;--muted:#5a6280;--fh:'Syne',sans-serif;--fm:'JetBrains Mono',monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{background:var(--bg);color:var(--text);font-family:var(--fm);min-height:100vh;}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 50% at 10% 0%,rgba(61,255,160,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 90% 100%,rgba(92,200,255,.04) 0%,transparent 60%);pointer-events:none;z-index:0;}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px;position:relative;z-index:1;}
+.nav{display:flex;gap:4px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:20px;}
+.nav-tab{flex:1;background:none;border:none;border-radius:9px;color:var(--muted);cursor:pointer;font-family:var(--fh);font-size:.72rem;font-weight:700;letter-spacing:.5px;padding:10px 4px;text-align:center;transition:all .2s;text-transform:uppercase;}
+.nav-tab.active{background:var(--green);color:var(--bg);}
+.nav-tab .ti{display:block;font-size:1.1rem;margin-bottom:2px;}
+.page{display:none;}.page.active{display:block;}
+.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:16px;}
+.hero-title{font-family:var(--fh);font-size:2rem;font-weight:800;letter-spacing:-1px;line-height:1;}
+.hero-title span{color:var(--green);}
+.hero-sub{font-size:.7rem;color:var(--muted);margin-top:5px;}
+.days-big{font-family:var(--fh);font-size:2.8rem;font-weight:800;color:var(--green);line-height:1;}
+.days-lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;text-align:right;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.stat{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;}
+.stat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);}
+.stat.red::after{background:var(--red);}.stat.yellow::after{background:var(--yellow);}.stat.blue::after{background:var(--blue);}
+.slbl{font-size:.6rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:6px;}
+.sval{font-family:var(--fh);font-size:1.7rem;font-weight:700;line-height:1;}
+.sval .u{font-size:.85rem;color:var(--muted);}
+.shint{font-size:.65rem;color:var(--muted);margin-top:4px;}
+.shint.ok{color:var(--green);}.shint.warn{color:var(--yellow);}.shint.bad{color:var(--red);}
+.pcards{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:16px;}
+.phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.plbl{font-family:var(--fh);font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.ppct{font-family:var(--fh);font-size:1.4rem;font-weight:800;color:var(--green);}
+.ptrack{background:var(--bg);border:1px solid var(--border);border-radius:8px;height:24px;overflow:hidden;}
+.pfill{height:100%;background:linear-gradient(90deg,var(--green),#00e0ff);border-radius:8px;transition:width 1s cubic-bezier(.4,0,.2,1);position:relative;}
+.pfill::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 16px,rgba(255,255,255,.06) 16px,rgba(255,255,255,.06) 17px);}
+.pmarks{display:flex;justify-content:space-between;margin-top:6px;font-size:.62rem;color:var(--muted);}
+.chips{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.chip{background:var(--s2);border:1px solid var(--border);border-radius:20px;font-size:.65rem;padding:4px 10px;color:var(--muted);}
+.chip.done{border-color:var(--green);color:var(--green);background:rgba(61,255,160,.08);}
+.chip.done::before{content:'✓ ';}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;}
+.ch{font-family:var(--fh);font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.irow{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;}
+.ig{flex:1;display:flex;flex-direction:column;gap:4px;}
+.ig label{font-size:.6rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+input[type="number"],input[type="date"],input[type="text"],select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--fm);font-size:.82rem;padding:9px 11px;width:100%;outline:none;transition:border-color .2s;}
+input:focus,select:focus{border-color:var(--green);}
+.btn{background:var(--green);color:var(--bg);border:none;border-radius:8px;cursor:pointer;font-family:var(--fh);font-size:.75rem;font-weight:700;letter-spacing:.5px;padding:9px 16px;text-transform:uppercase;transition:opacity .15s,transform .1s;white-space:nowrap;}
+.btn:hover{opacity:.82;}.btn:active{transform:scale(.96);}
+.btn.ghost{background:var(--s2);color:var(--text);border:1px solid var(--border);}
+.btn.sm{padding:6px 12px;font-size:.7rem;}
+.btn.red{background:var(--red);color:#fff;}
+.ring-row{display:flex;align-items:center;gap:20px;margin-bottom:16px;}
+.ring-box{position:relative;width:90px;height:90px;flex-shrink:0;}
+.ring-box svg{width:90px;height:90px;}
+.ring-inn{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-pct{font-family:var(--fh);font-size:1.1rem;font-weight:800;}
+.ring-sub{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.cal-big{font-family:var(--fh);font-size:2rem;font-weight:800;line-height:1;}
+.cal-big span{font-size:.9rem;color:var(--muted);}
+.macgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.macbox{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+.macnum{font-family:var(--fh);font-size:1.4rem;font-weight:700;}
+.macnum.p{color:var(--purple);}.macnum.f{color:var(--yellow);}.macnum.c{color:var(--blue);}
+.maclbl{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.macprog{height:3px;border-radius:3px;background:var(--border);margin-top:6px;overflow:hidden;}
+.macbar{height:100%;border-radius:3px;transition:width .5s;}
+.mentry{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--s2);border-radius:8px;margin-bottom:6px;font-size:.75rem;}
+.mleft{display:flex;flex-direction:column;gap:2px;}
+.mname{font-weight:500;}.mmeta{color:var(--muted);font-size:.65rem;}
+.mkcal{font-family:var(--fh);font-weight:700;color:var(--green);margin-right:6px;}
+.wtbl{width:100%;border-collapse:collapse;font-size:.75rem;}
+.wtbl th{color:var(--muted);font-size:.6rem;letter-spacing:1px;padding:6px 8px;text-align:left;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.wtbl td{padding:9px 8px;border-bottom:1px solid rgba(34,38,53,.5);vertical-align:middle;}
+.wtbl tr:last-child td{border-bottom:none;}
+.wtbl tr:hover td{background:rgba(61,255,160,.025);}
+.dbtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.8rem;padding:2px 5px;border-radius:4px;}
+.dbtn:hover{color:var(--red);}
+.ttrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.ttype{background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-family:var(--fm);font-size:.72rem;padding:12px;text-align:center;transition:all .2s;}
+.ttype.active{border-color:var(--green);background:rgba(61,255,160,.07);color:var(--green);}
+.tti{font-size:1.4rem;display:block;margin-bottom:4px;}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;}
+.modal-ov.open{display:flex;}
+.mbox{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:28px;width:92%;max-width:420px;}
+.mtitle{font-family:var(--fh);font-size:1.1rem;font-weight:800;margin-bottom:18px;}
+.mgrid{display:grid;gap:12px;}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:var(--bg);font-family:var(--fh);font-size:.8rem;font-weight:700;padding:11px 20px;border-radius:8px;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s ease;max-width:300px;}
+.toast.show{transform:translateY(0);opacity:1;}.toast.bad{background:var(--red);}
+.tipbox{background:linear-gradient(135deg,rgba(61,255,160,.05),rgba(92,200,255,.05));border:1px solid rgba(61,255,160,.15);border-radius:12px;padding:14px 16px;font-size:.75rem;line-height:1.65;margin-top:14px;}
+.tiphead{font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);margin-bottom:6px;font-weight:600;}
+.wdots{display:flex;gap:6px;margin-bottom:12px;}
+.wdot{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.6rem;color:var(--muted);}
+.dc{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:.65rem;transition:all .2s;}
+.dc.trained{background:var(--green);border-color:var(--green);color:var(--bg);font-weight:700;}
+.dc.today{border-color:var(--green);color:var(--green);}
+.empty{text-align:center;color:var(--muted);font-size:.73rem;padding:24px 12px;line-height:1.5;}
+.ei{font-size:2rem;display:block;margin-bottom:8px;}
+.day-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+canvas{display:block;}
+@media(max-width:640px){.stats-row{grid-template-columns:repeat(2,1fr);}.two{grid-template-columns:1fr;}.hero-title{font-size:1.5rem;}.days-big{font-size:2rem;}.ttrow{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="nav">
+  <button class="nav-tab active" onclick="showPage('oversikt')"><span class="ti">📊</span>Oversikt</button>
+  <button class="nav-tab" onclick="showPage('kalorier')"><span class="ti">🔥</span>Mat</button>
+  <button class="nav-tab" onclick="showPage('vekt')"><span class="ti">⚖️</span>Vekt</button>
+  <button class="nav-tab" onclick="showPage('trening')"><span class="ti">🏋️</span>Trening</button>
+  <button class="nav-tab" onclick="showPage('innstillinger')"><span class="ti">⚙️</span>Innstillinger</button>
+</nav>
+
+<!-- OVERSIKT -->
+<div class="page active" id="page-oversikt">
+  <div class="hero">
+    <div>
+      <div class="hero-title">HEALTH<span>TRACKING</span></div>
+      <div class="hero-sub" id="hero_sub">Fredrik · Mål: 85 kg innen 1. juli 2026</div>
+    </div>
+    <div style="text-align:right">
+      <div class="days-big" id="daysLeft">—</div>
+      <div class="days-lbl">dager igjen</div>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat">
+      <div class="slbl">Nåværende vekt</div>
+      <div class="sval" id="o_cur">— <span class="u">kg</span></div>
+      <div class="shint" id="o_since">Ikke logget ennå</div>
+    </div>
+    <div class="stat red">
+      <div class="slbl">Gjenstår</div>
+      <div class="sval" id="o_rem">— <span class="u">kg</span></div>
+      <div class="shint">til mål</div>
+    </div>
+    <div class="stat yellow">
+      <div class="slbl">Nødvendig tempo</div>
+      <div class="sval" id="o_need">— <span class="u">kg/u</span></div>
+      <div class="shint" id="o_eta">Estimert mål: —</div>
+    </div>
+    <div class="stat blue">
+      <div class="slbl">Fremgang</div>
+      <div class="sval" id="o_pct">0 <span class="u">%</span></div>
+      <div class="shint">av total reise</div>
+    </div>
+  </div>
+  <div class="pcards">
+    <div class="phead"><span class="plbl">Din reise</span><span class="ppct" id="o_pct2">0%</span></div>
+    <div class="ptrack"><div class="pfill" id="pbar" style="width:0%"></div></div>
+    <div class="pmarks"><span id="sw_lbl">97 kg</span><span id="goal_lbl">85 kg 🏆</span></div>
+    <div class="chips">
+      <div class="chip" id="c95">Under 95 kg</div>
+      <div class="chip" id="c92">Under 92 kg</div>
+      <div class="chip" id="c90">Under 90 kg</div>
+      <div class="chip" id="c87">Under 87 kg</div>
+      <div class="chip" id="c85">🏆 85 kg nådd!</div>
+    </div>
+  </div>
+  <div class="two">
+    <div class="card">
+      <div class="ch">📅 Ukens kalorier</div>
+      <div class="ring-row">
+        <div class="ring-box">
+          <svg viewBox="0 0 90 90"><circle cx="45" cy="45" r="36" fill="none" stroke="#1a1e28" stroke-width="9"/><circle cx="45" cy="45" r="36" fill="none" stroke="#3dffa0" stroke-width="9" stroke-dasharray="226" stroke-dashoffset="226" stroke-linecap="round" transform="rotate(-90 45 45)" id="r1" style="transition:stroke-dashoffset .6s ease"/></svg>
+          <div class="ring-inn"><div class="ring-pct" id="r1p">0%</div><div class="ring-sub">av mål</div></div>
+        </div>
+        <div style="flex:1">
+          <div class="cal-big" id="o_kcal">0 <span>kcal</span></div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:2px">snitt/dag · mål <strong id="o_target" style="color:var(--text)">—</strong> kcal</div>
+          <div style="font-size:.72rem;margin-top:4px" id="o_cbal">—</div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px">
+        <div style="font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px">🔥 Netto denne uken (snitt/dag)</div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:6px;text-align:center">
+          <div><div style="font-family:var(--fh);font-size:1.1rem;font-weight:700;color:var(--green)" id="o_net_in">—</div><div style="font-size:.58rem;color:var(--muted)">spist</div></div>
+          <div style="color:var(--muted);font-size:.9rem">−</div>
+          <div><div style="font-family:var(--fh);font-size:1.1rem;font-weight:700;color:var(--yellow)" id="o_net_burn">—</div><div style="font-size:.58rem;color:var(--muted)">forbrent</div></div>
+          <div style="color:var(--muted);font-size:.9rem">=</div>
+          <div><div style="font-family:var(--fh);font-size:1.1rem;font-weight:700" id="o_net_result">—</div><div style="font-size:.58rem;color:var(--muted)">netto</div></div>
+        </div>
+      </div>
+      <button class="btn ghost" style="width:100%" onclick="showPage('kalorier')">Logg mat →</button>
+    </div>
+    <div class="card">
+      <div class="ch">📈 Vektutvikling</div>
+      <canvas id="miniChart" height="140"></canvas>
+      <div class="tipbox" style="margin-top:12px">
+        <div class="tiphead">💡 Tips</div>
+        <div id="o_tip"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch">🔮 Forventet vektutvikling</div>
+    <div id="cal_pred_body"><div class="empty" style="padding:12px"><span class="ei" style="font-size:1.4rem">📊</span>Logg mat og trening for å se estimat.</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch">🧠 Smart analyse</div>
+    <div id="smart_analysis_body"><div class="empty" style="padding:12px"><span class="ei" style="font-size:1.4rem">📊</span>Logg vekt og mat for å se analyse.</div></div>
+  </div>
+</div>
+
+<!-- KALORIER -->
+<div class="page" id="page-kalorier">
+  <div class="two" style="margin-bottom:14px">
+    <div class="card">
+      <div class="ch">📅 Ukens gjennomsnitt</div>
+      <div class="ring-row">
+        <div class="ring-box">
+          <svg viewBox="0 0 90 90"><circle cx="45" cy="45" r="36" fill="none" stroke="#1a1e28" stroke-width="9"/><circle cx="45" cy="45" r="36" fill="none" stroke="#3dffa0" stroke-width="9" stroke-dasharray="226" stroke-dashoffset="226" stroke-linecap="round" transform="rotate(-90 45 45)" id="r2" style="transition:stroke-dashoffset .6s ease"/></svg>
+          <div class="ring-inn"><div class="ring-pct" id="r2p">0%</div><div class="ring-sub">av mål</div></div>
+        </div>
+        <div style="flex:1">
+          <div class="cal-big" id="k_eaten">0 <span>kcal</span></div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:2px">snitt/dag · mål <strong id="k_target" style="color:var(--text)">—</strong> kcal</div>
+          <div style="font-size:.72rem;margin-top:4px" id="k_bal">—</div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px">
+        <div style="font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px">🔥 Netto denne uken (snitt/dag)</div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:6px;text-align:center">
+          <div><div style="font-family:var(--fh);font-size:1.1rem;font-weight:700;color:var(--green)" id="k_net_in">—</div><div style="font-size:.58rem;color:var(--muted)">spist</div></div>
+          <div style="color:var(--muted);font-size:.9rem">−</div>
+          <div><div style="font-family:var(--fh);font-size:1.1rem;font-weight:700;color:var(--yellow)" id="k_net_burn">—</div><div style="font-size:.58rem;color:var(--muted)">forbrent</div></div>
+          <div style="color:var(--muted);font-size:.9rem">=</div>
+          <div><div style="font-family:var(--fh);font-size:1.1rem;font-weight:700" id="k_net_result">—</div><div style="font-size:.58rem;color:var(--muted)">netto</div></div>
+        </div>
+      </div>
+      <div class="macgrid">
+        <div class="macbox"><div class="macnum p" id="k_pro">0</div><div class="maclbl">Protein snitt</div><div class="macprog"><div class="macbar" id="k_proB" style="background:var(--purple);width:0%"></div></div></div>
+        <div class="macbox"><div class="macnum f" id="k_fat">0</div><div class="maclbl">Fett snitt</div><div class="macprog"><div class="macbar" id="k_fatB" style="background:var(--yellow);width:0%"></div></div></div>
+        <div class="macbox"><div class="macnum c" id="k_car">0</div><div class="maclbl">Karbo snitt</div><div class="macprog"><div class="macbar" id="k_carB" style="background:var(--blue);width:0%"></div></div></div>
+      </div>
+      <div id="k_weekdays" style="display:flex;gap:4px;margin-bottom:12px"></div>
+      <button class="btn ghost" style="width:100%" onclick="openSetup()">⚙ Kalibrer kalorimål</button>
+    </div>
+    <div class="card">
+      <div class="ch">➕ Legg til måltid</div>
+      <div class="ig" style="margin-bottom:10px">
+        <label>Dato</label>
+        <input type="date" id="mdate">
+      </div>
+      <div class="ig" style="margin-bottom:10px">
+        <label>Navn (valgfritt)</label>
+        <input type="text" id="mname" placeholder="F.eks. lunsj, middag, snack...">
+      </div>
+      <div class="irow">
+        <div class="ig"><label>Kalorier (kcal) *</label><input type="number" id="mkcal" placeholder="0" min="0"></div>
+        <div class="ig"><label>Protein (g)</label><input type="number" id="mpro" placeholder="0" min="0"></div>
+      </div>
+      <div class="irow">
+        <div class="ig"><label>Fett (g)</label><input type="number" id="mfat" placeholder="0" min="0"></div>
+        <div class="ig"><label>Karbohydrater (g)</label><input type="number" id="mcar" placeholder="0" min="0"></div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:4px" onclick="addManual()">Legg til</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="day-nav">
+      <div class="ch" style="margin-bottom:0">📋 Dagslogg</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn ghost sm" onclick="navDay(-1)">◀</button>
+        <input type="date" id="viewdate" onchange="renderMealLog()" style="font-size:.78rem;padding:6px 10px;width:auto">
+        <button class="btn ghost sm" onclick="navDay(1)">▶</button>
+        <button class="btn ghost sm" onclick="goToday()">I dag</button>
+      </div>
+    </div>
+    <div id="mlog"><div class="empty"><span class="ei">🍽️</span>Ingen mat logget ennå.</div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px">
+      <div style="font-size:.65rem;color:var(--muted)" id="mlog_hint"></div>
+      <button class="btn ghost sm" onclick="clearViewDay()">Tøm denne dagen</button>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);white-space:nowrap">⌚ Garmin forbrenning</span>
+      <input type="number" id="garmin_input" placeholder="kcal fra klokken" min="0" max="8000" style="flex:1;min-width:120px;max-width:180px;font-size:.8rem;padding:7px 10px">
+      <button class="btn ghost sm" onclick="saveGarmin()">Lagre</button>
+      <button class="btn ghost sm" onclick="clearGarmin()" style="color:var(--muted)">✕</button>
+      <span style="font-size:.65rem;color:var(--muted)" id="garmin_status"></span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch">📆 Kalorier siste 7 dager</div>
+    <canvas id="calChart" height="140"></canvas>
+  </div>
+
+  <div id="weekSummaries"></div>
+</div>
+
+<!-- VEKT -->
+<div class="page" id="page-vekt">
+  <div class="two">
+    <div class="card">
+      <div class="ch">⚖️ Logg vekt</div>
+      <div class="irow">
+        <div class="ig"><label>Dato</label><input type="date" id="w_date"></div>
+        <div class="ig"><label>Vekt (kg)</label><input type="number" id="w_val" step="0.1" min="40" max="250" placeholder="96.5"></div>
+        <div><button class="btn" onclick="addWeight()" style="margin-top:20px">Logg</button></div>
+      </div>
+      <div style="display:grid;gap:8px;margin-top:12px">
+        <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg);border-radius:8px;border:1px solid var(--border)"><span style="color:var(--muted)">Første måling</span><span id="ws1">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg);border-radius:8px;border:1px solid var(--border)"><span style="color:var(--muted)">Laveste måling</span><span id="ws2" style="color:var(--green)">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg);border-radius:8px;border:1px solid var(--border)"><span style="color:var(--muted)">Totalt tapt</span><span id="ws3" style="color:var(--green)">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg);border-radius:8px;border:1px solid var(--border)"><span style="color:var(--muted)">Snitt per uke</span><span id="ws4">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg);border-radius:8px;border:1px solid var(--border)"><span style="color:var(--muted)">Estimert mål nådd</span><span id="ws5" style="color:var(--yellow)">—</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch">📈 Vektgraf</div>
+      <canvas id="wChart" height="200"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch">📋 Historikk</div>
+    <div id="wlog"><div class="empty"><span class="ei">⚖️</span>Ingen målinger ennå.</div></div>
+  </div>
+</div>
+
+<!-- TRENING -->
+<div class="page" id="page-trening">
+  <div class="two">
+    <div class="card">
+      <div class="ch">🏋️ Logg økt</div>
+      <div class="ttrow">
+        <div class="ttype active" onclick="selType(this,'Styrketrening')"><span class="tti">🏋️</span>Styrketrening</div>
+        <div class="ttype" onclick="selType(this,'Jogging')"><span class="tti">🏃</span>Jogging</div>
+        <div class="ttype" onclick="selType(this,'Gåtur')"><span class="tti">🚶</span>Gåtur / Tur</div>
+      </div>
+      <div class="irow">
+        <div class="ig"><label>Dato</label><input type="date" id="t_date"></div>
+        <div class="ig"><label>Varighet (min)</label><input type="number" id="t_min" placeholder="45" min="1" max="300"></div>
+      </div>
+      <div class="ig" style="margin-bottom:10px"><label>Notater (valgfritt)</label><input type="text" id="t_notes" placeholder="Beskrivelse..."></div>
+      <button class="btn" style="width:100%" onclick="addTraining()">Logg økt</button>
+    </div>
+    <div class="card">
+      <div class="ch">📅 Denne uken</div>
+      <div class="wdots" id="wkdots"></div>
+      <div style="font-size:.72rem;color:var(--muted)" id="wkstats">—</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch">📋 Treningshistorikk</div>
+    <div id="tlog"><div class="empty"><span class="ei">🏋️</span>Ingen treninger logget ennå.</div></div>
+  </div>
+</div>
+
+<!-- INNSTILLINGER -->
+<div class="page" id="page-innstillinger">
+  <div class="two">
+    <div class="card">
+      <div class="ch">🎯 Mål &amp; Profil</div>
+      <div class="mgrid">
+        <div class="ig"><label>Navn</label><input type="text" id="cfg_name" placeholder="Fredrik"></div>
+        <div class="ig"><label>Startvekt (kg)</label><input type="number" id="cfg_sw" step="0.1" min="40" max="300"></div>
+        <div class="ig"><label>Vektmål (kg)</label><input type="number" id="cfg_goal" step="0.1" min="40" max="250"></div>
+        <div class="ig"><label>Frist (dato)</label><input type="date" id="cfg_dl"></div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:14px" onclick="saveGoals()">Lagre mål</button>
+    </div>
+    <div class="card">
+      <div class="ch">🔥 Kalorimål</div>
+      <div class="mgrid">
+        <div class="ig"><label>Daglig kalorigrense (kcal)</label><input type="number" id="cfg_cal" min="1000" max="5000"></div>
+        <div class="ig"><label>Proteinmål (g/dag)</label><input type="number" id="cfg_pro" min="0" max="500"></div>
+        <div class="ig"><label>Fettmål (g/dag)</label><input type="number" id="cfg_fat2" min="0" max="300"></div>
+        <div class="ig"><label>Karbomål (g/dag)</label><input type="number" id="cfg_car" min="0" max="600"></div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:14px" onclick="saveCalGoals()">Lagre kalorimål</button>
+      <button class="btn ghost" style="width:100%;margin-top:8px" onclick="openSetup()">🧮 Beregn fra TDEE</button>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch">🔮 Estimat for uloggede dager</div>
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:14px;line-height:1.6">Dager uten matlogg antas å ha høyere kaloriinntak. Disse estimatene brukes i snittberegninger og fremskrivinger.</div>
+    <div class="mgrid">
+      <div class="ig">
+        <label>Ukedag uten logg (man–fre)</label>
+        <input type="number" id="cfg_unlog_wd" min="1000" max="6000" placeholder="2750">
+        <div style="font-size:.62rem;color:var(--muted);margin-top:3px">Standard: 2750 kcal</div>
+      </div>
+      <div class="ig">
+        <label>Helg uten logg (lør–søn)</label>
+        <input type="number" id="cfg_unlog_we" min="1000" max="6000" placeholder="3000">
+        <div style="font-size:.62rem;color:var(--muted);margin-top:3px">Standard: 3000 kcal</div>
+      </div>
+    </div>
+    <button class="btn" style="width:100%;margin-top:14px" onclick="saveUnloggedSettings()">Lagre estimater</button>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch">✏️ Rediger kalorilogg</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:flex-end">
+      <div class="ig"><label>Velg dato</label><input type="date" id="edit_cal_date"></div>
+      <button class="btn ghost" onclick="loadCalEditDate()">Last inn</button>
+    </div>
+    <div id="cal_edit_log"><div class="empty" style="padding:12px">Velg en dato for å redigere</div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ch">✏️ Rediger treningslogg</div>
+    <div id="train_edit_log"><div class="empty" style="padding:12px">Laster...</div></div>
+  </div>
+  <div class="card" style="border-color:rgba(255,92,92,.25)">
+    <div class="ch" style="color:var(--red)">⚠️ Databehandling</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="exportData()">📤 Eksporter data (JSON)</button>
+      <button class="btn ghost" onclick="diagnosStorage()">🔍 Diagnose lagring</button>
+      <button class="btn red" onclick="confirmReset()">🗑️ Nullstill all data</button>
+    </div>
+    <div id="diag_out" style="margin-top:10px;font-size:.65rem;font-family:monospace;color:var(--muted);white-space:pre-wrap;display:none"></div>
+    <div style="font-size:.68rem;color:var(--muted);margin-top:8px">All data lagres lokalt i nettleseren. Eksporter jevnlig for sikkerhetskopiering.</div>
+  </div>
+</div>
+
+</div><!-- /.wrap -->
+
+<!-- MODALER -->
+<div class="modal-ov" id="setupModal">
+  <div class="mbox">
+    <div class="mtitle">⚙ Kalibrér kalorimålet ditt</div>
+    <div class="mgrid">
+      <div class="ig"><label>Høyde (cm)</label><input type="number" id="s_h" value="180" min="150" max="220"></div>
+      <div class="ig"><label>Alder</label><input type="number" id="s_a" value="26" min="15" max="80"></div>
+      <div class="ig"><label>Aktivitetsnivå</label>
+        <select id="s_act">
+          <option value="1.2" selected>Stillesittende (kontorjobb)</option>
+          <option value="1.375">Lett aktiv (1-2 treninger/uke)</option>
+          <option value="1.55">Moderat aktiv (3-4 treninger/uke)</option>
+        </select>
+      </div>
+      <div class="ig"><label>Ønsket tempo</label>
+        <select id="s_def">
+          <option value="500">−0.5 kg/uke (trygt)</option>
+          <option value="750" selected>−0.75 kg/uke (god fart ✓)</option>
+          <option value="1000">−1.0 kg/uke (aggressivt)</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn" onclick="calcCal()" style="flex:1">Beregn mitt mål</button>
+      <button class="btn ghost" onclick="closeModal('setupModal')" style="flex:1">Avbryt</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="editMealModal">
+  <div class="mbox">
+    <div class="mtitle">✏️ Rediger måltid</div>
+    <input type="hidden" id="em_id"><input type="hidden" id="em_date">
+    <div class="mgrid">
+      <div class="ig"><label>Navn</label><input type="text" id="em_name"></div>
+      <div class="ig"><label>Kalorier (kcal)</label><input type="number" id="em_kcal" min="0"></div>
+      <div class="ig"><label>Protein (g)</label><input type="number" id="em_pro" min="0"></div>
+      <div class="ig"><label>Fett (g)</label><input type="number" id="em_fat" min="0"></div>
+      <div class="ig"><label>Karbohydrater (g)</label><input type="number" id="em_car" min="0"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn" onclick="saveMealEdit()" style="flex:1">Lagre</button>
+      <button class="btn ghost" onclick="closeModal('editMealModal')" style="flex:1">Avbryt</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="editTrainModal">
+  <div class="mbox">
+    <div class="mtitle">✏️ Rediger treningsøkt</div>
+    <input type="hidden" id="et_id">
+    <div class="mgrid">
+      <div class="ig"><label>Dato</label><input type="date" id="et_date"></div>
+      <div class="ig"><label>Type</label>
+        <select id="et_type">
+          <option value="Styrketrening">🏋️ Styrketrening</option>
+          <option value="Jogging">🏃 Jogging</option>
+          <option value="Gåtur">🚶 Gåtur / Tur</option>
+        </select>
+      </div>
+      <div class="ig"><label>Varighet (min)</label><input type="number" id="et_min" min="1" max="300"></div>
+      <div class="ig"><label>Notater</label><input type="text" id="et_notes" placeholder="Valgfritt..."></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn" onclick="saveTrainEdit()" style="flex:1">Lagre</button>
+      <button class="btn ghost" onclick="closeModal('editTrainModal')" style="flex:1">Avbryt</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="editWeightModal">
+  <div class="mbox">
+    <div class="mtitle">✏️ Rediger vektmåling</div>
+    <input type="hidden" id="ew_olddate">
+    <div class="mgrid">
+      <div class="ig"><label>Dato</label><input type="date" id="ew_date"></div>
+      <div class="ig"><label>Vekt (kg)</label><input type="number" id="ew_val" step="0.1" min="40" max="250"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn" onclick="saveWeightEdit()" style="flex:1">Lagre</button>
+      <button class="btn ghost" onclick="closeModal('editWeightModal')" style="flex:1">Avbryt</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// DATA
+const SEED={"weights":[{"date":"2026-02-18","weight":96.3},{"date":"2026-03-03","weight":97.6},{"date":"2026-03-04","weight":97.6}],"trainings":[{"id":1772392126562,"date":"2026-03-01","type":"Gåtur","minutes":60,"notes":"Hjemme - Coop & Retur","kcal":270},{"id":1772558379291,"date":"2026-03-03","type":"Gåtur","minutes":60,"notes":"Hjemme - Coop & Retur","kcal":270},{"id":1772654355729,"date":"2026-03-04","type":"Gåtur","minutes":50,"notes":"Hjemme - Rema & Retur","kcal":225},{"id":1773124121706,"date":"2026-03-08","type":"Gåtur","minutes":55,"notes":"Runden","kcal":248}],"meals":{"2026-03-01":[],"2026-03-02":[{"name":"2. mars","kcal":1959,"protein":119,"fat":87,"carbs":170,"id":1772471957637}],"2026-03-03":[{"name":"3. mars","kcal":1707,"protein":81,"fat":63,"carbs":196,"id":1772558426621}],"2026-03-04":[{"name":"4. mars","kcal":1528,"protein":104,"fat":68,"carbs":121,"id":1772654317963}],"2026-03-09":[{"name":"9. mars","kcal":1599,"protein":99,"fat":77,"carbs":131,"id":1773124027911}],"2026-03-10":[{"name":"10. mars","kcal":2856,"protein":127,"fat":114,"carbs":335,"id":1773348924652}],"2026-03-11":[{"name":"11. mars","kcal":1197,"protein":65,"fat":56,"carbs":102,"id":1773348887784}],"2026-03-12":[{"name":"12. mars","kcal":2062,"protein":171,"fat":86,"carbs":145,"id":1773348905968}]},"settings":{"calTarget":1614,"protein":175,"fat":78,"carbs":53},"profile":{"name":"Fredrik","startWeight":97,"goal":85,"deadline":"2026-07-01"}};
+
+// Try loading from current key, then fall back to older keys
+let stored=null;
+const OLD_KEYS=['vektapp4','vektapp3','vektapp2','vektapp1'];
+for(const key of OLD_KEYS){
+  try{
+    const raw=localStorage.getItem(key);
+    if(raw){stored=JSON.parse(raw);if(stored)break;}
+  }catch(e){}
+}
+if(stored){
+  // Migrate: ensure all top-level keys exist, never overwrite real data
+  if(!stored.profile)stored.profile=SEED.profile;
+  if(!stored.garmin)stored.garmin={};
+  if(!stored.trainings)stored.trainings=[];
+  if(!stored.weights)stored.weights=[];
+  if(!stored.meals)stored.meals={};
+  if(!stored.settings)stored.settings={...SEED.settings};
+  if(stored.settings.unloggedWeekday==null)stored.settings.unloggedWeekday=2750;
+  if(stored.settings.unloggedWeekend==null)stored.settings.unloggedWeekend=3000;
+  // Re-save under current key to consolidate
+  try{localStorage.setItem('vektapp4',JSON.stringify(stored));}catch(e){}
+}
+let D=stored||SEED;
+if(!D.profile)D.profile=SEED.profile;
+if(!D.garmin)D.garmin={};
+if(!D.settings)D.settings={...SEED.settings};
+if(D.settings.unloggedWeekday==null)D.settings.unloggedWeekday=2750;
+if(D.settings.unloggedWeekend==null)D.settings.unloggedWeekend=3000;
+
+const save=()=>localStorage.setItem('vektapp4',JSON.stringify(D));
+const GOAL=()=>D.profile.goal||85;
+const SW=()=>D.profile.startWeight||97;
+const DL=()=>new Date(D.profile.deadline||'2026-07-01');
+const td=()=>new Date().toISOString().split('T')[0];
+const lw=()=>D.weights.length?[...D.weights].sort((a,b)=>b.date.localeCompare(a.date))[0].weight:SW();
+const $=id=>document.getElementById(id);
+const sHtml=(id,h)=>{const e=$(id);if(e)e.innerHTML=h;};
+const fmtD=d=>new Date(d+'T12:00:00').toLocaleDateString('no-NO',{day:'numeric',month:'short'});
+const setPct=(id,p)=>{const e=$(id);if(e)e.style.width=Math.min(100,Math.max(0,p))+'%';};
+
+let miniC=null,wC=null,calC=null,selTT='Styrketrening',tipI=0;
+
+// Returns burned kcal for a date: Garmin if available, else training log
+const burnedForDay=d=>{
+  if(D.garmin&&D.garmin[d]!=null)return D.garmin[d];
+  return (D.trainings||[]).filter(t=>t.date===d).reduce((s,t)=>s+(t.kcal||0),0);
+};
+// Returns logged kcal for a day, or estimated baseline if not logged
+const isWeekend=d=>{const dow=new Date(d+'T12:00:00').getDay();return dow===0||dow===6;};
+const kcalForDay=d=>{
+  const meals=D.meals[d];
+  if(meals&&meals.length>0)return meals.reduce((s,m)=>s+(m.kcal||0),0);
+  return isWeekend(d)?(D.settings.unloggedWeekend||3000):(D.settings.unloggedWeekday||2750);
+};
+// Returns all dates from first logged meal date up to today
+const allDaysFromStart=()=>{
+  const mealDates=Object.keys(D.meals).filter(d=>D.meals[d]&&D.meals[d].length>0).sort();
+  if(!mealDates.length)return[];
+  const start=new Date(mealDates[0]+'T12:00:00');
+  const end=new Date(td()+'T12:00:00');
+  const days=[];
+  for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
+    days.push(d.toISOString().split('T')[0]);
+  }
+  return days;
+};
+const tips=["Start enkelt! 2x styrke + 2x gåturer per uke er perfekt. Bygg opp gradvis.","Protein er din beste venn. Sikt på 1.6-2g per kg — holder deg mett og bevarer muskler.","En halvtimes rask gåtur forbrenner ca. 180-200 kcal. Enkelt og effektivt!","Vei deg hver morgen men se på ukessnittet, ikke enkeltmålinger. Normalt 1-2 kg daglig svingning.","Drikk et stort glass vann 15 min før hvert måltid — reduserer matinntaket med ~13%.","7-8 timers søvn er kritisk for vekttap — søvnmangel øker sultfølelsen med opptil 24%.","Styrketrening øker hvilestoffskiftet — kroppen forbrenner mer kalorier selv i hvile.","Med 97 kg start og 0.75 kg/uke tap treffer du 85 kg rundt slutten av mai. God margin!"];
+
+window.onload=()=>{
+  $('w_date').value=td();$('t_date').value=td();
+  $('mdate').value=td();$('viewdate').value=td();
+  updateDL();renderAll();newTip();
+};
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  $('page-'+id).classList.add('active');
+  ['oversikt','kalorier','vekt','trening','innstillinger'].forEach((n,i)=>{if(n===id)document.querySelectorAll('.nav-tab')[i].classList.add('active');});
+  if(id==='innstillinger')loadSettingsPage();
+  renderAll();
+}
+function closeModal(id){$(id).classList.remove('open');}
+function openSetup(){$('setupModal').classList.add('open');}
+function updateDL(){const d=Math.ceil((DL()-new Date())/864e5);$('daysLeft').textContent=Math.max(0,d);}
+
+function renderAll(){renderStats();renderPbar();renderRings();renderCalPrediction();renderSmartAnalysis();renderMiniChart();renderCalChart();renderMealLog();renderWeekSummaries();renderWPage();renderTPage();renderWkDots();}
+
+// OVERSIKT
+function renderStats(){
+  const w=lw(),rem=Math.max(0,w-GOAL()),lost=SW()-w,total=SW()-GOAL();
+  const pct=Math.min(100,Math.max(0,Math.round(lost/total*100)));
+  sHtml('o_cur',`${w.toFixed(1)} <span class="u">kg</span>`);
+  sHtml('o_rem',`${rem.toFixed(1)} <span class="u">kg</span>`);
+  sHtml('o_pct',`${pct} <span class="u">%</span>`);
+  const wl=Math.max(.1,(DL()-new Date())/6048e5);
+  sHtml('o_need',`${(rem/wl).toFixed(2)} <span class="u">kg/u</span>`);
+  sHtml('hero_sub',`${D.profile.name||'Fredrik'} · Mål: ${GOAL()} kg innen ${DL().toLocaleDateString('no-NO',{day:'numeric',month:'long',year:'numeric'})}`);
+  const sorted=[...D.weights].sort((a,b)=>a.date.localeCompare(b.date));
+  if(sorted.length>=2){
+    const f=sorted[0],l=sorted[sorted.length-1];
+    const wks=Math.max(.1,(new Date(l.date)-new Date(f.date))/6048e5);
+    const pace=(f.weight-l.weight)/wks;
+    if(pace>0){const wn=rem/pace,e=new Date(Date.now()+wn*6048e5);const es=e.toLocaleDateString('no-NO',{day:'numeric',month:'short',year:'numeric'});const ok=e<=DL();sHtml('o_eta','ETA: '+es);const ee=$('o_eta');if(ee)ee.className='shint '+(ok?'ok':'warn');sHtml('ws5',es);}
+    const d2=l.weight-(sorted[sorted.length-2]?.weight||l.weight);
+    const sh=$('o_since');if(sh){sh.innerHTML=`${d2<0?'↓':'↑'} ${Math.abs(d2).toFixed(1)} kg siden sist`;sh.className='shint '+(d2<0?'ok':d2>0?'bad':'');}
+    sHtml('ws1',sorted[0].weight+' kg');
+    sHtml('ws2',Math.min(...D.weights.map(x=>x.weight)).toFixed(1)+' kg');
+    sHtml('ws3',lost>0?'↓ '+lost.toFixed(1)+' kg':'0 kg');
+    sHtml('ws4',pace.toFixed(2)+' kg/uke');
+  }
+}
+
+function renderPbar(){
+  const w=lw(),lost=SW()-w,total=SW()-GOAL(),pct=Math.min(100,Math.max(0,lost/total*100));
+  const pb=$('pbar');if(pb)pb.style.width=pct+'%';
+  sHtml('o_pct2',Math.round(pct)+'%');
+  sHtml('sw_lbl',SW()+' kg');sHtml('goal_lbl',GOAL()+' kg 🏆');
+  [{id:'c95',kg:95},{id:'c92',kg:92},{id:'c90',kg:90},{id:'c87',kg:87},{id:'c85',kg:GOAL()}].forEach(m=>{const e=$(m.id);if(e)e.className='chip'+(w<=m.kg?' done':'');});
+}
+
+// RINGS & WEEK
+function getThisWeekDates(){
+  const now=new Date(),days=[],mon=new Date(now);
+  mon.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));
+  for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const ds=d.toISOString().split('T')[0];if(ds<=td())days.push(ds);}
+  return days;
+}
+function weekAvg(){
+  const days=getThisWeekDates(),logged=days.filter(d=>D.meals[d]&&D.meals[d].length>0);
+  if(!logged.length)return{kcal:0,protein:0,fat:0,carbs:0};
+  const tot=logged.reduce((a,d)=>{const t=(D.meals[d]||[]).reduce((b,m)=>({kcal:b.kcal+(m.kcal||0),protein:b.protein+(m.protein||0),fat:b.fat+(m.fat||0),carbs:b.carbs+(m.carbs||0)}),{kcal:0,protein:0,fat:0,carbs:0});return{kcal:a.kcal+t.kcal,protein:a.protein+t.protein,fat:a.fat+t.fat,carbs:a.carbs+t.carbs};},{kcal:0,protein:0,fat:0,carbs:0});
+  const n=logged.length;return{kcal:Math.round(tot.kcal/n),protein:Math.round(tot.protein/n),fat:Math.round(tot.fat/n),carbs:Math.round(tot.carbs/n)};
+}
+function renderRings(){
+  const avg=weekAvg(),target=D.settings.calTarget;
+  const pct=target>0?Math.round(avg.kcal/target*100):0;
+  const off=226-Math.min(226,226*pct/100);
+  ['r1','r2'].forEach(id=>{const e=$(id);if(e){e.style.strokeDashoffset=off;e.style.stroke=pct>100?'var(--red)':'var(--green)';}});
+  ['r1p','r2p'].forEach(id=>sHtml(id,pct+'%'));
+  const ks=`${avg.kcal.toLocaleString('no-NO')} <span>kcal</span>`;
+  sHtml('o_kcal',ks);sHtml('k_eaten',ks);
+  sHtml('o_target',target.toLocaleString('no-NO'));sHtml('k_target',target.toLocaleString('no-NO'));
+  const diff=avg.kcal-target;
+  const bc=diff>100?'var(--red)':diff<-50?'var(--green)':'var(--yellow)';
+  const bt=diff===0?'Rett på mål':diff>0?`+${diff} kcal over mål`:`${Math.abs(diff)} kcal under mål`;
+  ['o_cbal','k_bal'].forEach(id=>{const e=$(id);if(e){e.textContent=bt;e.style.color=bc;}});
+  sHtml('k_pro',avg.protein+'<span style="font-size:.8rem;color:var(--muted)">g</span>');
+  sHtml('k_fat',avg.fat+'<span style="font-size:.8rem;color:var(--muted)">g</span>');
+  sHtml('k_car',avg.carbs+'<span style="font-size:.8rem;color:var(--muted)">g</span>');
+  setPct('k_proB',Math.round(avg.protein/D.settings.protein*100));
+  setPct('k_fatB',Math.round(avg.fat/D.settings.fat*100));
+  setPct('k_carB',Math.round(avg.carbs/D.settings.carbs*100));
+
+  // Netto: spist − forbrent (aktivitet) denne uken
+  const days=getThisWeekDates();
+  const loggedDays=days.filter(d=>D.meals[d]&&D.meals[d].length>0);
+  const totalBurn=days.reduce((s,d)=>s+burnedForDay(d),0);
+  const avgBurn=loggedDays.length>0?Math.round(totalBurn/loggedDays.length):0;
+  const netResult=avg.kcal-avgBurn;
+  const netCol=netResult<=target?'var(--green)':'var(--red)';
+  const netStr=(netResult>0?'+':'')+netResult.toLocaleString('no-NO')+' <span style="font-size:.8rem;color:var(--muted)">kcal</span>';
+  ['o_net_in','k_net_in'].forEach(id=>sHtml(id,avg.kcal>0?avg.kcal.toLocaleString('no-NO')+' <span style="font-size:.8rem;color:var(--muted)">kcal</span>':'—'));
+  ['o_net_burn','k_net_burn'].forEach(id=>sHtml(id,avgBurn>0?avgBurn.toLocaleString('no-NO')+' <span style="font-size:.8rem;color:var(--muted)">kcal</span>':'0 <span style="font-size:.8rem;color:var(--muted)">kcal</span>'));
+  ['o_net_result','k_net_result'].forEach(id=>{const e=$(id);if(e){e.innerHTML=avg.kcal>0?netStr:'—';e.style.color=avg.kcal>0?netCol:'var(--muted)';}});
+
+  const dotsEl=$('k_weekdays');if(!dotsEl)return;
+  const dn=['M','T','O','T','F','L','S'],mon=new Date();
+  mon.setDate(mon.getDate()-(mon.getDay()===0?6:mon.getDay()-1));
+  let dh='';
+  for(let i=0;i<7;i++){
+    const d=new Date(mon);d.setDate(mon.getDate()+i);const ds=d.toISOString().split('T')[0];
+    const ms=D.meals[ds]||[];const kcal=ms.reduce((s,m)=>s+(m.kcal||0),0);
+    const fut=ds>td();const col=fut?'var(--border)':kcal===0?'var(--muted)':kcal<=target?'var(--green)':'var(--red)';
+    dh+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:28px;height:28px;border-radius:50%;border:1px solid ${col};background:${kcal>0&&!fut?'rgba(61,255,160,.08)':'var(--bg)'};display:flex;align-items:center;justify-content:center;font-size:.6rem;color:${col}">${kcal>0&&!fut?'✓':d.getDate()}</div><span style="font-size:.55rem;color:var(--muted)">${dn[i]}</span><span style="font-size:.55rem;color:${col}">${kcal>0&&!fut?kcal:''}</span></div>`;
+  }
+  dotsEl.innerHTML=dh;
+}
+
+// MEAL LOG
+function renderMealLog(){
+  const el=$('mlog');if(!el)return;
+  const vd=$('viewdate')?$('viewdate').value:td();
+  const isToday=vd===td();
+  const allLogged=Object.keys(D.meals).filter(d=>D.meals[d]&&D.meals[d].length>0).sort();
+  const hint=$('mlog_hint');
+  if(hint){const prev=allLogged.filter(d=>d<vd).pop();const next=allLogged.filter(d=>d>vd).shift();let p=[];if(prev)p.push('◀ '+fmtD(prev));if(next)p.push(fmtD(next)+' ▶');hint.textContent=p.length?'Dager med data: '+p.join('  ·  '):'';}
+  const meals=D.meals[vd]||[];
+  const tot=meals.reduce((a,m)=>({kcal:a.kcal+(m.kcal||0),protein:a.protein+(m.protein||0),fat:a.fat+(m.fat||0),carbs:a.carbs+(m.carbs||0)}),{kcal:0,protein:0,fat:0,carbs:0});
+  const target=D.settings.calTarget;
+  const dl=isToday?'I dag':new Date(vd+'T12:00:00').toLocaleDateString('no-NO',{weekday:'long',day:'numeric',month:'long'});
+  const dv=tot.kcal-target;
+  const ds=tot.kcal?(dv>0?`<span style="color:var(--red)">+${dv} over mål</span>`:`<span style="color:var(--green)">${Math.abs(dv)} under mål</span>`):'';
+  let html=`<div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;text-transform:capitalize">${dl}${ds?' · '+ds:''}</div>`;
+  if(!meals.length){
+    html+='<div class="empty" style="padding:16px 0"><span class="ei">🍽️</span>Ingen mat logget.<br><small>Velg dato i skjemaet og logg bakover.</small></div>';
+  }else{
+    html+=meals.map(m=>`<div class="mentry"><div class="mleft"><div class="mname">${m.name||'Måltid'}</div><div class="mmeta">P: ${m.protein}g · F: ${m.fat}g · K: ${m.carbs}g</div></div><div style="display:flex;align-items:center;gap:4px"><span class="mkcal">${m.kcal} kcal</span><button class="dbtn" title="Rediger" onclick="openEditMeal(${m.id},'${vd}')">✏️</button><button class="dbtn" onclick="delMeal(${m.id},'${vd}')">✕</button></div></div>`).join('');
+    html+=`<div style="display:flex;justify-content:space-between;padding:10px 10px 4px;font-size:.75rem;border-top:1px solid var(--border);margin-top:4px"><span style="color:var(--muted)">Totalt</span><span style="font-family:var(--fh);font-weight:700;color:${tot.kcal>target*1.05?'var(--red)':'var(--green)'}">${tot.kcal} kcal · P:${tot.protein}g · F:${tot.fat}g · K:${tot.carbs}g</span></div>`;
+  }
+  el.innerHTML=html;
+
+  // Update Garmin input for this date
+  const gi=$('garmin_input');
+  const gs=$('garmin_status');
+  if(gi){
+    const gVal=D.garmin[vd];
+    gi.value=gVal!=null?gVal:'';
+    if(gs){
+      if(gVal!=null){
+        const trainingKcal=D.trainings.filter(t=>t.date===vd).reduce((s,t)=>s+(t.kcal||0),0);
+        gs.innerHTML=`<span style="color:var(--green)">✓ ${gVal.toLocaleString('no-NO')} kcal brukt</span>${trainingKcal>0?` <span style="color:var(--muted)">(erstatter ${trainingKcal} kcal treningslogg)</span>`:''}`;
+      } else {
+        const trainingKcal=D.trainings.filter(t=>t.date===vd).reduce((s,t)=>s+(t.kcal||0),0);
+        gs.textContent=trainingKcal>0?`Bruker treningslogg: ${trainingKcal} kcal`:'Ingen forbrenning registrert';
+        gs.style.color='var(--muted)';
+      }
+    }
+  }
+}
+
+function renderWeekSummaries(){
+  const el=$('weekSummaries');if(!el)return;
+  const allDates=Object.keys(D.meals).filter(d=>D.meals[d]&&D.meals[d].length>0).sort().reverse();
+  const curWk=getISOWeek(new Date()),curYr=new Date().getFullYear(),weekMap={};
+  allDates.forEach(d=>{const dt=new Date(d+'T12:00:00');const wk=getISOWeek(dt),yr=dt.getFullYear(),key=`${yr}-W${String(wk).padStart(2,'0')}`;if(wk===curWk&&yr===curYr)return;if(!weekMap[key])weekMap[key]={dates:[],kcal:0,protein:0,fat:0,carbs:0,week:wk};const t=(D.meals[d]||[]).reduce((a,m)=>({kcal:a.kcal+(m.kcal||0),protein:a.protein+(m.protein||0),fat:a.fat+(m.fat||0),carbs:a.carbs+(m.carbs||0)}),{kcal:0,protein:0,fat:0,carbs:0});weekMap[key].dates.push(d);weekMap[key].kcal+=t.kcal;weekMap[key].protein+=t.protein;weekMap[key].fat+=t.fat;weekMap[key].carbs+=t.carbs;});
+  const wks=Object.keys(weekMap).sort().reverse();
+  if(!wks.length){el.innerHTML='';return;}
+  const target=D.settings.calTarget;
+  let html='<div class="card" style="margin-top:0"><div class="ch">📊 Ukens resultater</div>';
+  wks.forEach(key=>{
+    const w=weekMap[key],n=w.dates.length;
+    const aK=Math.round(w.kcal/n),aP=Math.round(w.protein/n),aF=Math.round(w.fat/n),aC=Math.round(w.carbs/n);
+    const diff=aK-target;const dc=diff>100?'var(--red)':diff>0?'var(--yellow)':'var(--green)';
+    const ds=diff>0?`+${diff} over mål`:diff<0?`${Math.abs(diff)} under mål`:'Rett på mål';
+    const sd=[...w.dates].sort();const rng=fmtD(sd[0])+' – '+fmtD(sd[sd.length-1]);
+    html+=`<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-family:var(--fh);font-size:.8rem;font-weight:700">Uke ${w.week}</div><div style="font-size:.62rem;color:var(--muted)">${rng} · ${n} dag${n>1?'er':''} logget</div></div><div style="text-align:right"><div style="font-family:var(--fh);font-size:1.1rem;font-weight:700;color:var(--green)">${aK.toLocaleString('no-NO')} kcal</div><div style="font-size:.62rem;color:${dc}">${ds}</div></div></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:.68rem;text-align:center"><div style="background:var(--bg);border-radius:6px;padding:5px"><span style="color:var(--purple);font-weight:700">${aP}g</span><br><span style="color:var(--muted)">protein</span></div><div style="background:var(--bg);border-radius:6px;padding:5px"><span style="color:var(--yellow);font-weight:700">${aF}g</span><br><span style="color:var(--muted)">fett</span></div><div style="background:var(--bg);border-radius:6px;padding:5px"><span style="color:var(--blue);font-weight:700">${aC}g</span><br><span style="color:var(--muted)">karbo</span></div></div></div>`;
+  });
+  el.innerHTML=html+'</div>';
+}
+
+function getISOWeek(date){const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));const dn=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-dn);const ys=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-ys)/864e5)+1)/7);}
+
+// MEAL ACTIONS
+function addManual(){
+  const date=$('mdate').value||td();
+  const name=$('mname').value.trim(),kcal=parseInt($('mkcal').value)||0;
+  const protein=parseInt($('mpro').value)||0,fat=parseInt($('mfat').value)||0,carbs=parseInt($('mcar').value)||0;
+  if(!kcal){toast('Fyll inn kalorier!','bad');return;}
+  if(!D.meals[date])D.meals[date]=[];
+  D.meals[date].push({name:name||'Måltid',kcal,protein,fat,carbs,id:Date.now()});
+  if($('viewdate'))$('viewdate').value=date;
+  save();renderAll();
+  ['mname','mkcal','mpro','mfat','mcar'].forEach(id=>$(id).value='');
+  toast('✓ Logget på '+fmtD(date));
+}
+
+function delMeal(id,date){
+  const d=date||($('viewdate')?$('viewdate').value:td());
+  if(D.meals[d])D.meals[d]=D.meals[d].filter(m=>m.id!==id);
+  save();renderAll();
+}
+
+function navDay(dir){
+  const vd=$('viewdate');if(!vd)return;
+  const d=new Date((vd.value||td())+'T12:00:00');d.setDate(d.getDate()+dir);
+  const ds=d.toISOString().split('T')[0];
+  vd.value=ds;if($('mdate'))$('mdate').value=ds;
+  renderMealLog();
+}
+function goToday(){if($('viewdate'))$('viewdate').value=td();if($('mdate'))$('mdate').value=td();renderMealLog();}
+function clearViewDay(){const date=$('viewdate')?$('viewdate').value:td();D.meals[date]=[];save();renderAll();toast('Logg tømt for '+fmtD(date));}
+
+// CHARTS
+function cOpts(mn,mx){return{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#111318',titleColor:'#3dffa0',bodyColor:'#dce4f0',borderColor:'#222635',borderWidth:1}},scales:{x:{ticks:{color:'#5a6280',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(34,38,53,.5)'}},y:{min:mn,max:mx,ticks:{color:'#5a6280',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(34,38,53,.5)'}}}};}
+
+function renderMiniChart(){
+  const sorted=[...D.weights].sort((a,b)=>a.date.localeCompare(b.date));
+  const ctx=$('miniChart')?$('miniChart').getContext('2d'):null;if(!ctx)return;
+  const labels=sorted.map(w=>fmtD(w.date)),actuals=sorted.map(w=>w.weight);
+  const startD=sorted.length?new Date(sorted[0].date):new Date();
+  const tDays=(DL()-startD)/864e5||1,dLoss=(SW()-GOAL())/tDays;
+  const ideals=sorted.map(w=>Math.max(GOAL(),SW()-(new Date(w.date)-startD)/864e5*dLoss));
+  if(miniC)miniC.destroy();
+  miniC=new Chart($('miniChart'),{type:'line',data:{labels:labels.length?labels:['Start','Mål'],datasets:[{label:'Vekt',data:actuals.length?actuals:[],borderColor:'#3dffa0',backgroundColor:'rgba(61,255,160,.06)',fill:false,tension:.4,pointBackgroundColor:'#3dffa0',pointRadius:4,borderWidth:2.5},{label:'Mål',data:(actuals.length?actuals:[SW(),GOAL()]).map(()=>GOAL()),borderColor:'#ff5c5c',borderDash:[6,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5},{label:'Idealspor',data:ideals.length?ideals:[SW(),GOAL()],borderColor:'#ffcc44',borderDash:[2,3],fill:false,tension:.2,pointRadius:0,borderWidth:1.5}]},options:cOpts(GOAL()-2,SW()+1)});
+}
+
+function renderCalChart(){
+  const ctx=$('calChart')?$('calChart').getContext('2d'):null;if(!ctx)return;
+  const days=[],now=new Date();
+  for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}
+  const totals=days.map(d=>(D.meals[d]||[]).reduce((s,m)=>s+(m.kcal||0),0));
+  const target=D.settings.calTarget;
+  if(calC)calC.destroy();
+  calC=new Chart($('calChart'),{type:'bar',data:{labels:days.map(d=>fmtD(d)),datasets:[{label:'Kcal',data:totals,backgroundColor:totals.map(v=>v>target?'rgba(255,92,92,.3)':'rgba(61,255,160,.2)'),borderColor:totals.map(v=>v>target?'#ff5c5c':'#3dffa0'),borderWidth:1.5,borderRadius:6},{label:'Mål',data:days.map(()=>target),type:'line',borderColor:'#ffcc44',borderDash:[5,4],fill:false,pointRadius:0,borderWidth:1.5}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#111318',titleColor:'#3dffa0',bodyColor:'#dce4f0',borderColor:'#222635',borderWidth:1}},scales:{x:{ticks:{color:'#5a6280',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(34,38,53,.5)'}},y:{beginAtZero:true,ticks:{color:'#5a6280',font:{family:'JetBrains Mono',size:10},callback:v=>v+' kcal'},grid:{color:'rgba(34,38,53,.5)'}}}}});
+}
+
+// VEKT
+function addWeight(){
+  const date=$('w_date').value,weight=parseFloat($('w_val').value);
+  if(!date||isNaN(weight)||weight<40||weight>250){toast('Ugyldig vekt!','bad');return;}
+  D.weights=D.weights.filter(w=>w.date!==date);
+  D.weights.push({date,weight});
+  D.weights.sort((a,b)=>a.date.localeCompare(b.date));
+  save();renderAll();$('w_val').value='';toast('✓ '+weight+' kg logget!');
+}
+function delW(date){D.weights=D.weights.filter(w=>w.date!==date);save();renderAll();}
+
+function renderWPage(){
+  const sorted=[...D.weights].sort((a,b)=>b.date.localeCompare(a.date));
+  const ctx=$('wChart')?$('wChart').getContext('2d'):null;
+  if(ctx){
+    const asc=[...sorted].reverse();
+    if(wC)wC.destroy();
+    wC=new Chart($('wChart'),{type:'line',data:{labels:asc.length?asc.map(w=>fmtD(w.date)):['Start','Mål'],datasets:[{label:'Vekt',data:asc.length?asc.map(w=>w.weight):[SW()],borderColor:'#3dffa0',backgroundColor:'rgba(61,255,160,.07)',fill:true,tension:.4,pointBackgroundColor:'#3dffa0',pointRadius:5,borderWidth:2.5},{label:'Mål',data:(asc.length?asc:[{weight:SW()},{weight:GOAL()}]).map(()=>GOAL()),borderColor:'#ff5c5c',borderDash:[6,4],fill:false,tension:0,pointRadius:0,borderWidth:1.5}]},options:cOpts(GOAL()-2,SW()+1)});
+  }
+  const el=$('wlog');
+  if(!sorted.length){el.innerHTML='<div class="empty"><span class="ei">⚖️</span>Ingen målinger ennå.</div>';return;}
+  el.innerHTML=`<table class="wtbl"><thead><tr><th>Dato</th><th>Vekt</th><th>Endring</th><th>Fra start</th><th>Til mål</th><th></th></tr></thead><tbody>${sorted.map((w,i)=>{const prev=sorted[i+1];const chg=prev?w.weight-prev.weight:null;const fs=(w.weight-SW()).toFixed(1);const tg=(w.weight-GOAL()).toFixed(1);return`<tr><td>${fmtD(w.date)}</td><td><strong>${w.weight} kg</strong></td><td style="color:${chg===null?'var(--muted)':chg<0?'var(--green)':chg>0?'var(--red)':'var(--muted)'}">${chg===null?'—':chg<0?'↓ '+Math.abs(chg).toFixed(1)+' kg':'↑ '+chg.toFixed(1)+' kg'}</td><td style="color:${parseFloat(fs)<=0?'var(--green)':'var(--red)'}">${parseFloat(fs)>0?'+':''}${fs} kg</td><td style="color:${parseFloat(tg)<=0?'var(--green)':'var(--yellow)'}">${parseFloat(tg)>0?'+':''}${tg} kg</td><td style="display:flex;gap:4px"><button class="dbtn" title="Rediger" onclick="openEditWeight('${w.date}',${w.weight})">✏️</button><button class="dbtn" onclick="delW('${w.date}')">✕</button></td></tr>`;}).join('')}</tbody></table>`;
+}
+
+// TRENING
+function selType(el,type){document.querySelectorAll('.ttype').forEach(t=>t.classList.remove('active'));el.classList.add('active');selTT=type;}
+
+function addTraining(){
+  const date=$('t_date').value,min=parseInt($('t_min').value),notes=$('t_notes').value.trim();
+  if(!date||isNaN(min)||min<1){toast('Fyll inn varighet!','bad');return;}
+  const rates={'Styrketrening':5,'Jogging':9,'Gåtur':4.5};
+  D.trainings.push({id:Date.now(),date,type:selTT,minutes:min,notes,kcal:Math.round((rates[selTT]||5)*min)});
+  save();renderAll();$('t_min').value='';$('t_notes').value='';toast('✓ '+selTT+' '+min+' min logget!');
+}
+function delT(id){D.trainings=D.trainings.filter(t=>t.id!==id);save();renderAll();}
+
+function renderTPage(){
+  const el=$('tlog'),sorted=[...D.trainings].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!sorted.length){el.innerHTML='<div class="empty"><span class="ei">🏋️</span>Ingen treninger logget ennå.</div>';return;}
+  el.innerHTML=`<table class="wtbl"><thead><tr><th>Dato</th><th>Type</th><th>Tid</th><th>~Kcal</th><th>Notater</th><th></th></tr></thead><tbody>${sorted.map(t=>`<tr><td>${fmtD(t.date)}</td><td>${t.type}</td><td>${t.minutes} min</td><td style="color:var(--yellow)">${t.kcal}</td><td style="color:var(--muted)">${t.notes||'—'}</td><td style="display:flex;gap:4px"><button class="dbtn" title="Rediger" onclick="openEditTrain(${t.id})">✏️</button><button class="dbtn" onclick="delT(${t.id})">✕</button></td></tr>`).join('')}</tbody></table>`;
+}
+
+function renderWkDots(){
+  const el=$('wkdots');if(!el)return;
+  const now=new Date(),mon=new Date(now);mon.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1));
+  const dn=['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+  let html='',wt=0,wm=0;
+  for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const ds=d.toISOString().split('T')[0];const isTd=ds===td();const trained=D.trainings.some(t=>t.date===ds);if(trained){wt++;wm+=D.trainings.filter(t=>t.date===ds).reduce((s,t)=>s+t.minutes,0);}html+=`<div class="wdot"><div class="dc${trained?' trained':isTd?' today':''}">${trained?'✓':d.getDate()}</div><span>${dn[i]}</span></div>`;}
+  el.innerHTML=html;sHtml('wkstats',`${wt} økt(er) denne uken · ${wm} min totalt`);
+}
+
+// INNSTILLINGER
+function loadSettingsPage(){
+  const p=D.profile;
+  $('cfg_name').value=p.name||'';$('cfg_sw').value=p.startWeight||97;
+  $('cfg_goal').value=p.goal||85;$('cfg_dl').value=p.deadline||'2026-07-01';
+  $('cfg_cal').value=D.settings.calTarget||1614;$('cfg_pro').value=D.settings.protein||175;
+  $('cfg_fat2').value=D.settings.fat||78;$('cfg_car').value=D.settings.carbs||53;
+  $('cfg_unlog_wd').value=D.settings.unloggedWeekday||2750;
+  $('cfg_unlog_we').value=D.settings.unloggedWeekend||3000;
+  $('edit_cal_date').value=td();
+  renderTrainEditLog();
+}
+function saveGoals(){D.profile.name=$('cfg_name').value.trim()||'Fredrik';D.profile.startWeight=parseFloat($('cfg_sw').value)||97;D.profile.goal=parseFloat($('cfg_goal').value)||85;D.profile.deadline=$('cfg_dl').value||'2026-07-01';save();renderAll();toast('✓ Mål oppdatert');}
+function saveCalGoals(){D.settings.calTarget=parseInt($('cfg_cal').value)||1614;D.settings.protein=parseInt($('cfg_pro').value)||175;D.settings.fat=parseInt($('cfg_fat2').value)||78;D.settings.carbs=parseInt($('cfg_car').value)||53;save();renderAll();toast('✓ Kalorimål: '+D.settings.calTarget+' kcal/dag');}
+function saveUnloggedSettings(){D.settings.unloggedWeekday=parseInt($('cfg_unlog_wd').value)||2750;D.settings.unloggedWeekend=parseInt($('cfg_unlog_we').value)||3000;save();renderAll();toast('✓ Estimater lagret: '+D.settings.unloggedWeekday+' / '+D.settings.unloggedWeekend+' kcal');}
+function calcCal(){const w=lw(),h=parseInt($('s_h').value)||180,a=parseInt($('s_a').value)||26;const act=parseFloat($('s_act').value),def=parseInt($('s_def').value);const bmr=10*w+6.25*h-5*a+5,tdee=Math.round(bmr*act),target=Math.max(1500,tdee-def);const pro=Math.round(w*1.8),fat2=Math.round(w*0.8),cc=Math.max(0,target-pro*4-fat2*9);D.settings={calTarget:target,protein:pro,fat:fat2,carbs:Math.round(cc/4)};save();closeModal('setupModal');renderAll();toast('✓ TDEE: '+tdee+' kcal → Mål: '+target+' kcal/dag');}
+
+// EDIT MEAL
+function loadCalEditDate(){
+  const date=$('edit_cal_date').value;if(!date){toast('Velg en dato','bad');return;}
+  const meals=D.meals[date]||[];const el=$('cal_edit_log');
+  if(!meals.length){el.innerHTML=`<div class="empty" style="padding:12px">Ingen måltider logget ${fmtD(date)}</div>`;return;}
+  const tot=meals.reduce((a,m)=>({kcal:a.kcal+(m.kcal||0),protein:a.protein+(m.protein||0),fat:a.fat+(m.fat||0),carbs:a.carbs+(m.carbs||0)}),{kcal:0,protein:0,fat:0,carbs:0});
+  el.innerHTML=meals.map(m=>`<div class="mentry"><div class="mleft"><div class="mname">${m.name||'Måltid'}</div><div class="mmeta">P: ${m.protein}g · F: ${m.fat}g · K: ${m.carbs}g</div></div><div style="display:flex;align-items:center;gap:4px"><span class="mkcal">${m.kcal} kcal</span><button class="dbtn" onclick="openEditMeal(${m.id},'${date}')">✏️</button><button class="dbtn" onclick="delMealFromEditor(${m.id},'${date}')">✕</button></div></div>`).join('')+`<div style="padding:8px 10px 0;font-size:.72rem;border-top:1px solid var(--border);margin-top:4px;display:flex;justify-content:space-between"><span style="color:var(--muted)">Totalt</span><span style="color:var(--green);font-family:var(--fh);font-weight:700">${tot.kcal} kcal</span></div>`;
+}
+function delMealFromEditor(id,date){if(D.meals[date])D.meals[date]=D.meals[date].filter(m=>m.id!==id);save();renderAll();loadCalEditDate();}
+function openEditMeal(id,date){const meals=D.meals[date]||[];const m=meals.find(x=>x.id===id);if(!m)return;$('em_id').value=id;$('em_date').value=date;$('em_name').value=m.name||'';$('em_kcal').value=m.kcal||0;$('em_pro').value=m.protein||0;$('em_fat').value=m.fat||0;$('em_car').value=m.carbs||0;$('editMealModal').classList.add('open');}
+function saveMealEdit(){const id=parseInt($('em_id').value),date=$('em_date').value,meals=D.meals[date]||[],idx=meals.findIndex(x=>x.id===id);if(idx===-1)return;meals[idx]={...meals[idx],name:$('em_name').value.trim()||'Måltid',kcal:parseInt($('em_kcal').value)||0,protein:parseInt($('em_pro').value)||0,fat:parseInt($('em_fat').value)||0,carbs:parseInt($('em_car').value)||0};D.meals[date]=meals;if($('viewdate'))$('viewdate').value=date;save();closeModal('editMealModal');renderAll();toast('✓ Måltid oppdatert');}
+
+// EDIT TRAINING
+function renderTrainEditLog(){const el=$('train_edit_log');if(!el)return;const sorted=[...D.trainings].sort((a,b)=>b.date.localeCompare(a.date));if(!sorted.length){el.innerHTML='<div class="empty" style="padding:12px">Ingen treninger logget ennå</div>';return;}el.innerHTML=`<table class="wtbl"><thead><tr><th>Dato</th><th>Type</th><th>Tid</th><th>Notater</th><th></th></tr></thead><tbody>${sorted.map(t=>`<tr><td>${fmtD(t.date)}</td><td>${t.type}</td><td>${t.minutes} min</td><td style="color:var(--muted)">${t.notes||'—'}</td><td style="display:flex;gap:4px"><button class="dbtn" onclick="openEditTrain(${t.id})">✏️</button><button class="dbtn" onclick="delTAndRefresh(${t.id})">✕</button></td></tr>`).join('')}</tbody></table>`;}
+function delTAndRefresh(id){delT(id);renderTrainEditLog();}
+function openEditTrain(id){const t=D.trainings.find(x=>x.id===id);if(!t)return;$('et_id').value=id;$('et_date').value=t.date;$('et_type').value=t.type;$('et_min').value=t.minutes;$('et_notes').value=t.notes||'';$('editTrainModal').classList.add('open');}
+function saveTrainEdit(){const id=parseInt($('et_id').value),idx=D.trainings.findIndex(x=>x.id===id);if(idx===-1)return;const type=$('et_type').value,min=parseInt($('et_min').value)||0;const rates={'Styrketrening':5,'Jogging':9,'Gåtur':4.5};D.trainings[idx]={...D.trainings[idx],date:$('et_date').value,type,minutes:min,notes:$('et_notes').value.trim(),kcal:Math.round((rates[type]||5)*min)};save();closeModal('editTrainModal');renderAll();toast('✓ Treningsøkt oppdatert');}
+
+// EDIT WEIGHT
+function openEditWeight(date,weight){$('ew_olddate').value=date;$('ew_date').value=date;$('ew_val').value=weight;$('editWeightModal').classList.add('open');}
+function saveWeightEdit(){const oldDate=$('ew_olddate').value,newDate=$('ew_date').value,weight=parseFloat($('ew_val').value);if(!newDate||isNaN(weight)||weight<40||weight>250){toast('Ugyldig vekt!','bad');return;}D.weights=D.weights.filter(w=>w.date!==oldDate&&w.date!==newDate);D.weights.push({date:newDate,weight});D.weights.sort((a,b)=>a.date.localeCompare(b.date));save();closeModal('editWeightModal');renderAll();toast('✓ Vektmåling oppdatert');}
+
+// EXPORT / RESET
+function exportData(){const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='helsetracking_'+td()+'.json';a.click();toast('✓ Data eksportert!');}
+function confirmReset(){if(confirm('Er du sikker? ALL data slettes permanent.')){localStorage.removeItem('vektapp4');location.reload();}}
+function diagnosStorage(){
+  const out=$('diag_out');
+  out.style.display='block';
+  const allKeys=['vektapp1','vektapp2','vektapp3','vektapp4','vektapp5'];
+  let report='=== ALLE NØKLER I LOCALSTORAGE ===\n';
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    const v=localStorage.getItem(k);
+    report+=k+': '+v.length+' tegn\n';
+  }
+  report+='\n=== VEKTAPP-NØKLER ===\n';
+  allKeys.forEach(k=>{
+    const raw=localStorage.getItem(k);
+    if(raw){
+      try{
+        const d=JSON.parse(raw);
+        report+=k+':\n';
+        report+='  weights: '+(d.weights?d.weights.length:0)+' stk\n';
+        report+='  trainings: '+(d.trainings?d.trainings.length:0)+' stk\n';
+        report+='  meals: '+Object.keys(d.meals||{}).filter(x=>(d.meals[x]||[]).length>0).length+' dager\n';
+        report+='  settings.calTarget: '+(d.settings?d.settings.calTarget:'?')+'\n';
+        report+='  profile.name: '+(d.profile?d.profile.name:'?')+'\n';
+      }catch(e){report+=k+': parse-feil\n';}
+    } else {
+      report+=k+': ikke funnet\n';
+    }
+  });
+  report+='\n=== AKTIV D (lastet inn) ===\n';
+  report+='weights: '+D.weights.length+' stk\n';
+  report+='trainings: '+D.trainings.length+' stk\n';
+  report+='meals: '+Object.keys(D.meals).filter(x=>(D.meals[x]||[]).length>0).length+' dager\n';
+  out.textContent=report;
+}
+
+function saveGarmin(){
+  const date=$('viewdate')?$('viewdate').value:td();
+  const val=parseInt($('garmin_input').value);
+  if(isNaN(val)||val<0){toast('Ugyldig verdi!','bad');return;}
+  if(!D.garmin)D.garmin={};
+if(D.settings.unloggedWeekday==null)D.settings.unloggedWeekday=2750;
+if(D.settings.unloggedWeekend==null)D.settings.unloggedWeekend=3000;
+  D.garmin[date]=val;
+  save();renderAll();
+  toast(`✓ Garmin: ${val.toLocaleString('no-NO')} kcal lagret for ${fmtD(date)}`);
+}
+function clearGarmin(){
+  const date=$('viewdate')?$('viewdate').value:td();
+  if(D.garmin&&D.garmin[date]!=null){delete D.garmin[date];save();renderAll();toast('Garmin-data fjernet');}
+}
+
+function renderCalPrediction(){
+  const el=$('cal_pred_body');if(!el)return;
+
+  const allMealDates=Object.keys(D.meals).filter(d=>D.meals[d]&&D.meals[d].length>0).sort();
+  if(!allMealDates.length){el.innerHTML='<div class="empty" style="padding:12px"><span class="ei" style="font-size:1.4rem">📊</span>Logg mat og trening for å se estimat.</div>';return;}
+
+  // Bruk alle dager fra første loggdato til i dag — uloggede dager estimeres med baseline
+  const allDays=allDaysFromStart();
+  const totalDays=allDays.length;
+  const loggedDaysCount=allMealDates.length;
+  const unloggedCount=totalDays-loggedDaysCount;
+
+  const target=D.settings.calTarget;
+  let totalKcalIn=0, totalTDEE=0, garminDays=0;
+  allDays.forEach(d=>{
+    totalKcalIn+=kcalForDay(d); // logget verdi eller estimert baseline
+    if(D.garmin&&D.garmin[d]!=null){
+      totalTDEE+=D.garmin[d];
+      garminDays++;
+    } else {
+      totalTDEE+=target;
+    }
+  });
+
+  const avgIn=Math.round(totalKcalIn/totalDays);
+  const avgTDEE=Math.round(totalTDEE/totalDays);
+  const dailyDiff=Math.round((totalKcalIn-totalTDEE)/totalDays);
+  const kgPerWeek=+(dailyDiff*7/7700).toFixed(2);
+
+  const hasGarmin=garminDays>0;
+  const burnLabel=hasGarmin
+    ?`kcal TDEE/dag (${garminDays}/${totalDays} dager Garmin)`
+    :`kcal/dag · kalorimål som proxy — logg Garmin for bedre nøyaktighet`;
+  const unloggedNote=unloggedCount>0
+    ?`<div style="font-size:.65rem;color:var(--yellow);margin-top:8px;padding:8px 10px;background:rgba(255,200,60,.07);border:1px solid rgba(255,200,60,.2);border-radius:8px">⚠️ <strong>${unloggedCount} uloggede dager</strong> er estimert med baseline (${D.settings.unloggedWeekday} kcal hverdag / ${D.settings.unloggedWeekend} kcal helg). <span style="text-decoration:underline;cursor:pointer" onclick="showPage('innstillinger')">Juster i Innstillinger</span></div>`
+    :''
+
+  const curW=lw();
+  const proj=[4,8,12].map(w=>+(curW+kgPerWeek*w).toFixed(1));
+
+  const trendDown=kgPerWeek<0;
+  const trendCol=trendDown?'var(--green)':kgPerWeek>0?'var(--red)':'var(--muted)';
+  const trendArrow=trendDown?'↓':kgPerWeek>0?'↑':'→';
+  const trendTxt=trendDown
+    ?`Du er i underskudd på ${Math.abs(dailyDiff)} kcal/dag — forventes å gå ned ca. ${Math.abs(kgPerWeek)} kg/uke.`
+    :kgPerWeek>0
+    ?`Du er i overskudd på ${dailyDiff} kcal/dag — forventes å gå opp ca. ${kgPerWeek} kg/uke.`
+    :`Kalorier omtrent i balanse — stabil vekt forventes.`;
+
+  const conf=loggedDaysCount>=14?'Høy':loggedDaysCount>=7?'Moderat':'Lav';
+  const confCol=loggedDaysCount>=14?'var(--green)':loggedDaysCount>=7?'var(--yellow)':'var(--red)';
+
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Snitt spist/dag</div>
+        <div style="font-family:var(--fh);font-size:1.3rem;font-weight:700;color:var(--text)">${avgIn.toLocaleString('no-NO')}</div>
+        <div style="font-size:.6rem;color:var(--muted)">kcal · ${loggedDaysCount} dager data</div>
+      </div>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Snitt TDEE/dag</div>
+        <div style="font-family:var(--fh);font-size:1.3rem;font-weight:700;color:var(--yellow)">${avgTDEE.toLocaleString('no-NO')}</div>
+        <div style="font-size:.6rem;color:var(--muted)">${burnLabel}</div>
+      </div>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Daglig differanse</div>
+        <div style="font-family:var(--fh);font-size:1.3rem;font-weight:700;color:${trendDown?'var(--green)':dailyDiff>0?'var(--red)':'var(--muted)'}">${dailyDiff>0?'+':''}${dailyDiff.toLocaleString('no-NO')}</div>
+        <div style="font-size:.6rem;color:var(--muted)">kcal/dag (spist − TDEE)</div>
+      </div>
+    </div>
+    <div style="background:${trendDown?'rgba(61,255,160,.06)':kgPerWeek>0?'rgba(255,92,92,.06)':'rgba(90,98,128,.06)'};border:1px solid ${trendDown?'rgba(61,255,160,.2)':kgPerWeek>0?'rgba(255,92,92,.2)':'var(--border)'};border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+      <div style="font-family:var(--fh);font-size:2rem;font-weight:800;color:${trendCol};line-height:1;flex-shrink:0">${trendArrow} ${Math.abs(kgPerWeek)}<span style="font-size:.9rem"> kg/u</span></div>
+      <div>
+        <div style="font-size:.75rem;line-height:1.5">${trendTxt}</div>
+        <div style="font-size:.62rem;color:var(--muted);margin-top:3px">7 700 kcal = 1 kg fett · Pålitelighet: <span style="color:${confCol}">${conf}</span> (${loggedDaysCount} dager) · ${hasGarmin?garminDays+' dager med Garmin':'ingen Garmin-data'}</div>
+      </div>
+    </div>
+    ${unloggedNote}
+    <div style="font-family:var(--fh);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Fremskriving ved samme tempo</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      ${[{w:4,p:proj[0]},{w:8,p:proj[1]},{w:12,p:proj[2]}].map(({w,p})=>{
+        const diff=+(p-curW).toFixed(1);
+        const col=diff<0?'var(--green)':diff>0?'var(--red)':'var(--muted)';
+        const atGoal=p<=GOAL();
+        return`<div style="background:var(--s2);border:1px solid ${atGoal?'var(--green)':'var(--border)'};border-radius:10px;padding:12px;text-align:center${atGoal?';box-shadow:0 0 0 1px rgba(61,255,160,.15)':''}">
+          <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Om ${w} uker</div>
+          <div style="font-family:var(--fh);font-size:1.4rem;font-weight:800;color:${atGoal?'var(--green)':'var(--text)'}">${p} kg</div>
+          <div style="font-size:.65rem;color:${col};margin-top:2px">${diff>0?'+':''}${diff} kg${atGoal?' 🏆':''}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function applyCalTarget(val){D.settings.calTarget=val;save();renderAll();toast('✓ Kalorimål justert til '+val+' kcal/dag');}
+
+function renderSmartAnalysis(){
+  const el=$('smart_analysis_body');if(!el)return;
+
+  const sorted=[...D.weights].sort((a,b)=>a.date.localeCompare(b.date));
+  const allMealDates=Object.keys(D.meals).filter(d=>D.meals[d]&&D.meals[d].length>0).sort();
+  if(sorted.length<2&&!allMealDates.length){
+    el.innerHTML='<div class="empty" style="padding:12px"><span class="ei" style="font-size:1.4rem">📊</span>Logg vekt og mat i noen dager for å se analyse.</div>';
+    return;
+  }
+
+  const insights=[];
+
+  // --- VEKTTREND ---
+  if(sorted.length>=2){
+    const first=sorted[0],last=sorted[sorted.length-1];
+    const days=(new Date(last.date)-new Date(first.date))/(1000*60*60*24);
+    const totalChange=last.weight-first.weight;
+    const kgPerWeek=days>0?+(totalChange/(days/7)).toFixed(2):0;
+    const needPerWeek=+(((lw()-GOAL())/((new Date(DL())-new Date())/(1000*60*60*24*7)))).toFixed(2);
+
+    if(kgPerWeek>0.1){
+      // Går opp — sjekk om det skyldes mat
+      const allDays2=allDaysFromStart();
+    const avgIn=allDays2.length?Math.round(allDays2.reduce((s,d)=>s+kcalForDay(d),0)/allDays2.length):null;
+      const overEating=avgIn&&avgIn>D.settings.calTarget;
+      if(overEating){
+        const overshoot=avgIn-D.settings.calTarget;
+        const suggestedTarget=Math.max(1400,D.settings.calTarget-Math.round(overshoot*0.5));
+        insights.push({
+          type:'bad',
+          icon:'⚠️',
+          title:`Vekta går opp ${kgPerWeek} kg/uke`,
+          body:`Du spiser i snitt <strong>${avgIn.toLocaleString('no-NO')} kcal/dag</strong> — det er <strong>${overshoot} kcal over</strong> kalorimålet ditt. Kombinert med vektøkningen tyder dette på at kalorimålet bør strammes inn.`,
+          actions:[
+            {label:`Juster kalorimål til ${suggestedTarget} kcal`,fn:`applyCalTarget(${suggestedTarget})`},
+          ]
+        });
+      } else if(avgIn){
+        // Følger kalorimål men går likevel opp
+        const tdeeAvg=allMealDates.reduce((s,d)=>s+(D.garmin&&D.garmin[d]!=null?D.garmin[d]:D.settings.calTarget),0)/allMealDates.length;
+        const suggestedTarget=Math.max(1400,Math.round(tdeeAvg-500));
+        insights.push({
+          type:'warn',
+          icon:'🤔',
+          title:`Vekta går opp ${kgPerWeek} kg/uke — selv om du følger kalorimålet`,
+          body:`Du holder kalorimålet, men vekta stiger likevel. Enten er TDEE-estimatet for høyt, eller kroppen reagerer på noe annet. Prøv å sette et strengere mål basert på faktisk forbrenning.`,
+          actions:[
+            {label:`Prøv strengere mål: ${suggestedTarget} kcal`,fn:`applyCalTarget(${suggestedTarget})`},
+          ]
+        });
+      } else {
+        insights.push({
+          type:'warn',
+          icon:'📈',
+          title:`Vekta går opp ${kgPerWeek} kg/uke`,
+          body:`Begynn å logge mat daglig — da kan appen finne årsaken og gi deg konkrete anbefalinger.`,
+          actions:[]
+        });
+      }
+    } else if(kgPerWeek<-0.05){
+      // Positiv trend
+      const onTrack=Math.abs(kgPerWeek)>=needPerWeek*0.8;
+      if(onTrack){
+        insights.push({
+          type:'good',
+          icon:'✅',
+          title:`På rett spor — ${Math.abs(kgPerWeek)} kg/uke ned`,
+          body:`Du går ned i riktig tempo mot målet ditt. Fortsett som nå — ikke gjør store endringer når noe fungerer.`,
+          actions:[]
+        });
+      } else {
+        const deficit=Math.round(needPerWeek*7700/7);
+        const suggestedTarget=Math.max(1400,Math.round(D.settings.calTarget-(deficit-Math.abs(kgPerWeek)*7700/7)));
+        insights.push({
+          type:'warn',
+          icon:'🐢',
+          title:`Går ned, men for sakte — ${Math.abs(kgPerWeek)} kg/uke (trenger ${Math.abs(needPerWeek).toFixed(2)})`,
+          body:`For å nå <strong>${GOAL()} kg</strong> innen <strong>${DL()}</strong> trenger du ca. <strong>${Math.abs(needPerWeek).toFixed(2)} kg/uke</strong>. Du er i underskudd, men ikke nok.`,
+          actions: suggestedTarget<D.settings.calTarget?[{label:`Stram inn til ${suggestedTarget} kcal/dag`,fn:`applyCalTarget(${suggestedTarget})`}]:[]
+        });
+      }
+    } else {
+      insights.push({
+        type:'neutral',
+        icon:'➡️',
+        title:'Stabil vekt — ingen klar trend ennå',
+        body:`Vekta har holdt seg relativt flat de siste dagene. Logg mer data over tid for en mer pålitelig trend.`,
+        actions:[]
+      });
+    }
+  }
+
+  // --- KALORIOVERHOLDELSE ---
+  if(allMealDates.length>=3){
+    const target=D.settings.calTarget;
+    const daysOver=allMealDates.filter(d=>(D.meals[d]||[]).reduce((s,m)=>s+(m.kcal||0),0)>target*1.05).length;
+    const pctOver=Math.round(daysOver/allMealDates.length*100);
+    if(pctOver>=50){
+      insights.push({
+        type:'warn',
+        icon:'🍽️',
+        title:`Overskrider kalorimålet ${pctOver}% av dagene`,
+        body:`Du overskrider kalorimålet på <strong>${daysOver} av ${allMealDates.length} loggede dager</strong>. Vurder om målet er realistisk, eller om det er spesifikke dager (helg?) som trekker opp snittet.`,
+        actions:[]
+      });
+    }
+  }
+
+  // --- TRENINGSFREKVENS ---
+  if(D.trainings.length>0){
+    const recentWeeks=3;
+    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-recentWeeks*7);
+    const recentTrainings=D.trainings.filter(t=>new Date(t.date)>=cutoff);
+    const weeksWithTraining=new Set(recentTrainings.map(t=>{const dt=new Date(t.date);return getISOWeek(dt)+'-'+dt.getFullYear();})).size;
+    if(weeksWithTraining<recentWeeks&&recentWeeks>1){
+      insights.push({
+        type:'neutral',
+        icon:'🏃',
+        title:`Treningsfrekvens: ${weeksWithTraining} av ${recentWeeks} uker aktiv`,
+        body:`Regelmessig trening styrker vekttapet. Selv 2-3 rolige gåturer i uka gir målbar effekt over tid.`,
+        actions:[]
+      });
+    }
+  }
+
+  if(!insights.length){
+    el.innerHTML='<div class="empty" style="padding:12px"><span class="ei">👍</span>Alt ser bra ut — ingen varsler akkurat nå.</div>';
+    return;
+  }
+
+  const colMap={good:'var(--green)',bad:'var(--red)',warn:'var(--yellow)',neutral:'var(--muted)'};
+  const bgMap={good:'rgba(61,255,160,.05)',bad:'rgba(255,92,92,.05)',warn:'rgba(255,200,60,.05)',neutral:'rgba(90,98,128,.05)'};
+  const bdMap={good:'rgba(61,255,160,.2)',bad:'rgba(255,92,92,.2)',warn:'rgba(255,200,60,.2)',neutral:'var(--border)'};
+
+  el.innerHTML=insights.map(ins=>`
+    <div style="background:${bgMap[ins.type]};border:1px solid ${bdMap[ins.type]};border-radius:10px;padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:1.3rem;line-height:1;flex-shrink:0">${ins.icon}</span>
+        <div style="flex:1">
+          <div style="font-family:var(--fh);font-size:.8rem;font-weight:700;color:${colMap[ins.type]};margin-bottom:4px">${ins.title}</div>
+          <div style="font-size:.72rem;line-height:1.6;color:var(--text);opacity:.85">${ins.body}</div>
+          ${ins.actions.length?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">${ins.actions.map(a=>`<button class="btn ghost sm" style="font-size:.7rem;border-color:${colMap[ins.type]};color:${colMap[ins.type]}" onclick="${a.fn}">${a.label}</button>`).join('')}</div>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function newTip(){tipI=(tipI+1)%tips.length;sHtml('o_tip',tips[tipI]);}
+function toast(msg,type='ok'){const e=$('toast');e.textContent=msg;e.className='toast'+(type==='bad'?' bad':'')+' show';setTimeout(()=>e.classList.remove('show'),3200);}
+</script>
+</body>
+</html>
